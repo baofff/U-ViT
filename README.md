@@ -56,17 +56,25 @@ conda install xformers  # This is optional, but it would greatly speed up the at
 
 
 
-## Data Preparation
+## Preparation Before Training and Evaluation
+
+#### Autoencoder
+Download `stable-diffusion` directory (containing image autoencoders converted from [Stable Diffusion](https://github.com/CompVis/stable-diffusion)) from this [link](https://drive.google.com/drive/folders/1yo-XhqbPue3rp5P57j6QbA5QZx6KybvP?usp=sharing). 
+Put the downloaded directory as `assets/stable-diffusion` in this codebase.
+The autoencoders are used in latent diffusion models.
+
+#### Data
 * ImageNet 64x64: Put the standard ImageNet dataset (which contains the `train` and `val` directory) to `assets/datasets/ImageNet`.
 * ImageNet 256x256 and ImageNet 512x512: Extract ImageNet features according to `scripts/extract_imagenet_feature.py`.
 * MS-COCO: Download COCO 2014 [training](http://images.cocodataset.org/zips/train2014.zip), [validation](http://images.cocodataset.org/zips/val2014.zip) data and [annotations](http://images.cocodataset.org/annotations/annotations_trainval2014.zip). Then extract their features according to `scripts/extract_mscoco_feature.py` `scripts/extract_test_prompt_feature.py` `scripts/extract_empty_feature.py`.
 
-
+#### Reference statistics for FID
+Download `fid_stats` directory (containing reference statistics for FID) from this [link](https://drive.google.com/drive/folders/1yo-XhqbPue3rp5P57j6QbA5QZx6KybvP?usp=sharing).
+Put the downloaded directory as `assets/fid_stats` in this codebase.
+In addition to evaluation, these reference statistics are used to monitor FID during the training process.
 
 ## Training
 
-Firstly prepare the data as instructed above. Then download reference statistics for FID (which is used to monitor FID during training) and the autoencoder (converted from [Stable Diffusion](https://github.com/CompVis/stable-diffusion), which is necessary for training in the latent space) from this [link](https://drive.google.com/drive/folders/1yo-XhqbPue3rp5P57j6QbA5QZx6KybvP?usp=sharing).
-Put the downloaded directories as `assets/fid_stats` and `assets/stable-diffusion` respectively.
 
 
 We use the [huggingface accelerate](https://github.com/huggingface/accelerate) library to help train with distributed data parallel and mixed precision. The following is the training command:
@@ -79,7 +87,7 @@ train_script=train.py  # the train script, one of <train.py|train_ldm.py|train_l
                        # train_ldm_discrete.py: training on latent space with discrete timesteps
                        # train_t2i_discrete.py: text-to-image training on latent space
 config=configs/cifar10_uvit_small.py  # the training configuration
-                                      # you can change other hyperparameter by modifying the configuration file
+                                      # you can change other hyperparameters by modifying the configuration file
 
 # launch training
 accelerate launch --multi_gpu --num_processes $num_processes --mixed_precision fp16 $train_script --config=$config
@@ -103,8 +111,14 @@ accelerate launch --multi_gpu --num_processes 8 --mixed_precision fp16 train.py 
 # ImageNet 256x256 (U-ViT-L/2)
 accelerate launch --multi_gpu --num_processes 8 --mixed_precision fp16 train_ldm.py --config=configs/imagenet256_uvit_large.py
 
+# ImageNet 256x256 (U-ViT-H/2)
+accelerate launch --multi_gpu --num_processes 8 --mixed_precision fp16 train_ldm_discrete.py --config=configs/imagenet256_uvit_huge.py
+
 # ImageNet 512x512 (U-ViT-L/4)
 accelerate launch --multi_gpu --num_processes 8 --mixed_precision fp16 train_ldm.py --config=configs/imagenet512_uvit_large.py
+
+# ImageNet 512x512 (U-ViT-H/4)
+accelerate launch --multi_gpu --num_processes 8 --mixed_precision fp16 train_ldm_discrete.py --config=configs/imagenet512_uvit_huge.py
 
 # MS-COCO (U-ViT-S/2)
 accelerate launch --multi_gpu --num_processes 4 --mixed_precision fp16 train_t2i_discrete.py --config=configs/mscoco_uvit_small.py
@@ -117,13 +131,9 @@ accelerate launch --multi_gpu --num_processes 4 --mixed_precision fp16 train_t2i
 
 ## Evaluation (Compute FID)
 
-Firstly download reference statistics for FID and the autoencoder (converted from [Stable Diffusion](https://github.com/CompVis/stable-diffusion), which is necessary for latent diffusion models) from this [link](https://drive.google.com/drive/folders/1yo-XhqbPue3rp5P57j6QbA5QZx6KybvP?usp=sharing).
-Put the downloaded directories as `assets/fid_stats` and `assets/stable-diffusion` repectively.
-
-
 We use the [huggingface accelerate](https://github.com/huggingface/accelerate) library for efficient inference with mixed precision and multiple gpus. The following is the evaluation command:
 ```sh
-# the training setting
+# the evaluation setting
 num_processes=2  # the number of gpus you have, e.g., 2
 eval_script=eval.py  # the evaluation script, one of <eval.py|eval_ldm.py|eval_ldm_discrete.py|eval_t2i_discrete.py>
                      # eval.py: for models trained with train.py (i.e., pixel space models)
@@ -132,8 +142,8 @@ eval_script=eval.py  # the evaluation script, one of <eval.py|eval_ldm.py|eval_l
                      # eval_t2i_discrete.py: for models trained with train_t2i_discrete.py (i.e., text-to-image models on latent space)
 config=configs/cifar10_uvit_small.py  # the training configuration
 
-# launch training
-accelerate launch --multi_gpu --num_processes $num_processes --mixed_precision fp16 $train_script --config=$config
+# launch evaluation
+accelerate launch --multi_gpu --num_processes $num_processes --mixed_precision fp16 eval_script --config=$config
 ```
 The generated images are stored in a temperary directory, and will be deleted after evaluation. 💡If you want to keep these images, set `--config.sample.path=/save/dir`.
 
@@ -155,8 +165,14 @@ accelerate launch --multi_gpu --num_processes 8 --mixed_precision fp16 eval.py -
 # ImageNet 256x256 (U-ViT-L/2)
 accelerate launch --multi_gpu --num_processes 8 --mixed_precision fp16 eval_ldm.py --config=configs/imagenet256_uvit_large.py --nnet_path=imagenet256_uvit_large.pth
 
+# ImageNet 256x256 (U-ViT-H/2)
+accelerate launch --multi_gpu --num_processes 8 --mixed_precision fp16 eval_ldm_discrete.py --config=configs/imagenet256_uvit_huge.py --nnet_path=imagenet256_uvit_huge.pth
+
 # ImageNet 512x512 (U-ViT-L/4)
 accelerate launch --multi_gpu --num_processes 8 --mixed_precision fp16 eval_ldm.py --config=configs/imagenet512_uvit_large.py --nnet_path=imagenet512_uvit_large.pth
+
+# ImageNet 512x512 (U-ViT-H/4)
+accelerate launch --multi_gpu --num_processes 8 --mixed_precision fp16 eval_ldm_discrete.py --config=configs/imagenet512_uvit_huge.py --nnet_path=imagenet512_uvit_huge.pth
 
 # MS-COCO (U-ViT-S/2)
 accelerate launch --multi_gpu --num_processes 4 --mixed_precision fp16 eval_t2i_discrete.py --config=configs/mscoco_uvit_small.py --nnet_path=mscoco_uvit_small.pth
