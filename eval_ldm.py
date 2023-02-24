@@ -114,6 +114,7 @@ def evaluate(config):
         path = config.sample.path or temp_path
         if accelerator.is_main_process:
             os.makedirs(path, exist_ok=True)
+        logging.info(f'Samples are saved in {path}')
         utils.sample2dir(accelerator, path, config.sample.n_samples, config.sample.mini_batch_size, sample_fn, dataset.unpreprocess)
         if accelerator.is_main_process:
             fid = calculate_fid_given_paths((dataset.fid_stat, path))

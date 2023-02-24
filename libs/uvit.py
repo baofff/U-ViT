@@ -3,10 +3,20 @@ import torch.nn as nn
 import math
 import timm
 from timm.models.layers import trunc_normal_
-from timm.models.vision_transformer import PatchEmbed, Attention, Mlp
+from timm.models.vision_transformer import PatchEmbed, Mlp
 assert timm.__version__ == "0.3.2"  # version check
 import einops
 import torch.utils.checkpoint
+
+# the xformers lib allows less memory, faster training and inference
+try:
+    import xformers
+    import xformers.ops
+    XFORMERS_IS_AVAILBLE = True
+    print('xformers enabled')
+except:
+    XFORMERS_IS_AVAILBLE = False
+    print('xformers disabled')
 
 
 def timestep_embedding(timesteps, dim, max_period=10000):
@@ -43,6 +53,39 @@ def unpatchify(x, channels=3):
     return x
 
 
+class Attention(nn.Module):
+    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
+        super().__init__()
+        self.num_heads = num_heads
+        head_dim = dim // num_heads
+        self.scale = qk_scale or head_dim ** -0.5
+
+        self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+    def forward(self, x):
+        B, N, C = x.shape
+
+        qkv = self.qkv(x)
+        qkv = einops.rearrange(qkv, 'B L (K H D) -> K B L H D', K=3, H=self.num_heads)
+        q, k, v = qkv[0], qkv[1], qkv[2]  # B L H D
+
+        if XFORMERS_IS_AVAILBLE:  # the xformers lib allows less memory, faster training and inference
+            x = xformers.ops.memory_efficient_attention(q, k, v)
+            x = einops.rearrange(x, 'B L H D -> B L (H D)', H=self.num_heads)
+        else:
+            attn = (q @ k.transpose(-2, -1)) * self.scale
+            attn = attn.softmax(dim=-1)
+            attn = self.attn_drop(attn)
+            x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+
+        x = self.proj(x)
+        x = self.proj_drop(x)
+        return x
+
+
 class Block(nn.Module):
 
     def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None,
@@ -73,7 +116,8 @@ class Block(nn.Module):
 
 class UViT(nn.Module):
     def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4.,
-                 qkv_bias=False, qk_scale=None, norm_layer=nn.LayerNorm, mlp_time_embed=False, num_classes=-1, use_checkpoint=False):
+                 qkv_bias=False, qk_scale=None, norm_layer=nn.LayerNorm, mlp_time_embed=False, num_classes=-1,
+                 use_checkpoint=False, conv=True, skip=True):
         super().__init__()
         self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
         self.num_classes = num_classes
@@ -110,13 +154,13 @@ class UViT(nn.Module):
         self.out_blocks = nn.ModuleList([
             Block(
                 dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
-                norm_layer=norm_layer, skip=True, use_checkpoint=use_checkpoint)
+                norm_layer=norm_layer, skip=skip, use_checkpoint=use_checkpoint)
             for _ in range(depth // 2)])
 
         self.norm = norm_layer(embed_dim)
         self.patch_dim = patch_size ** 2 * in_chans
         self.decoder_pred = nn.Linear(embed_dim, self.patch_dim, bias=True)
-        self.final_layer = nn.Conv2d(self.in_chans, self.in_chans, 3, padding=1)
+        self.final_layer = nn.Conv2d(self.in_chans, self.in_chans, 3, padding=1) if conv else nn.Identity()
 
         trunc_normal_(self.pos_embed, std=.02)
         self.apply(self._init_weights)
@@ -158,7 +202,6 @@ class UViT(nn.Module):
             x = blk(x, skips.pop())
 
         x = self.norm(x)
-
         x = self.decoder_pred(x)
         assert x.size(1) == self.extras + L
         x = x[:, self.extras:, :]
