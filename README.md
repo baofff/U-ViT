@@ -30,7 +30,11 @@ U-ViT treats all inputs as tokens and employs long skip connections. *The long s
 ```sh
 conda install pytorch torchvision torchaudio cudatoolkit=11.3
 pip install accelerate==0.12.0 timm==0.3.2 absl-py ml_collections einops wandb ftfy==6.1.1 transformers==4.23.1
-conda install xformers  # This is optional, but it would greatly speed up the attention computation.
+
+# xformers is optional, but it would greatly speed up the attention computation.
+# 
+pip install -U xformers
+pip install -U --pre triton
 ```
 
 * This repo is based on [`timm==0.3.2`](https://github.com/rwightman/pytorch-image-models), for which a [fix](https://github.com/rwightman/pytorch-image-models/issues/420#issuecomment-776459842) is needed to work with PyTorch 1.8.1+.
@@ -199,4 +203,4 @@ This implementation is based on
 * [Extended Analytic-DPM](https://github.com/baofff/Extended-Analytic-DPM) (provide the FID reference statistics on CIFAR10 and CelebA 64x64)
 * [guided-diffusion](https://github.com/openai/guided-diffusion) (provide the FID reference statistics on ImageNet)
 * [pytorch-fid](https://github.com/mseitzer/pytorch-fid) (provide the official implementation of FID to PyTorch)
-* [https://github.com/LuChengTHU/dpm-solver](https://github.com/LuChengTHU/dpm-solver) (provide the sampler)
+* [dpm-solver](https://github.com/LuChengTHU/dpm-solver) (provide the sampler)

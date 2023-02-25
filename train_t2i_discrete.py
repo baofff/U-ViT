@@ -9,7 +9,7 @@ from torch.utils._pytree import tree_map
 import accelerate
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
-from dpm_solver_pp import NoiseScheduleVP, model_wrapper, DPM_Solver
+from dpm_solver_pp import NoiseScheduleVP, DPM_Solver
 import tempfile
 from tools.fid_score import calculate_fid_given_paths
 from absl import logging
@@ -79,7 +79,7 @@ class Schedule(object):  # discrete time
         n = np.random.choice(list(range(1, self.N + 1)), (len(x0),))
         eps = torch.randn_like(x0)
         xn = stp(self.cum_alphas[n] ** 0.5, x0) + stp(self.cum_betas[n] ** 0.5, eps)
-        return torch.tensor(n), eps, xn
+        return torch.tensor(n, device=x0.device), eps, xn
 
     def __repr__(self):
         return f'Schedule({self.betas[:10]}..., {self.N})'

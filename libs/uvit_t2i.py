@@ -66,20 +66,21 @@ class Attention(nn.Module):
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(self, x):
-        B, N, C = x.shape
+        B, L, C = x.shape
 
         qkv = self.qkv(x)
-        qkv = einops.rearrange(qkv, 'B L (K H D) -> K B L H D', K=3, H=self.num_heads)
-        q, k, v = qkv[0], qkv[1], qkv[2]  # B L H D
-
         if XFORMERS_IS_AVAILBLE:  # the xformers lib allows less memory, faster training and inference
+            qkv = einops.rearrange(qkv, 'B L (K H D) -> K B L H D', K=3, H=self.num_heads)
+            q, k, v = qkv[0], qkv[1], qkv[2]  # B L H D
             x = xformers.ops.memory_efficient_attention(q, k, v)
             x = einops.rearrange(x, 'B L H D -> B L (H D)', H=self.num_heads)
         else:
+            qkv = einops.rearrange(qkv, 'B L (K H D) -> K B H L D', K=3, H=self.num_heads)
+            q, k, v = qkv[0], qkv[1], qkv[2]  # B H L D
             attn = (q @ k.transpose(-2, -1)) * self.scale
             attn = attn.softmax(dim=-1)
             attn = self.attn_drop(attn)
-            x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+            x = (attn @ v).transpose(1, 2).reshape(B, L, C)
 
         x = self.proj(x)
         x = self.proj_drop(x)

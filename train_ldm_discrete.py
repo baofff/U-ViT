@@ -79,7 +79,7 @@ class Schedule(object):  # discrete time
         n = np.random.choice(list(range(1, self.N + 1)), (len(x0),))
         eps = torch.randn_like(x0)
         xn = stp(self.cum_alphas[n] ** 0.5, x0) + stp(self.cum_betas[n] ** 0.5, eps)
-        return torch.tensor(n), eps, xn
+        return torch.tensor(n, device=x0.device), eps, xn
 
     def __repr__(self):
         return f'Schedule({self.betas[:10]}..., {self.N})'
