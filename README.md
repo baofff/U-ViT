@@ -33,6 +33,10 @@ U-ViT treats all inputs as tokens and employs long skip connections. *The long s
 * Efficient evaluation scripts for [pixel-space diffusion models](eval.py) and [latent space diffusion models](eval_ldm_discrete.py) and [text-to-image diffusion models](eval_t2i_discrete.py)
 * A Colab notebook demo for sampling from U-ViT on ImageNet (FID=2.29) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/baofff/U-ViT/blob/main/UViT_ImageNet_demo.ipynb)
 
+
+<img src="sample.png" alt="drawing" width="800"/>
+
+
 💡This codebase supports useful techniques for efficient training and sampling of diffusion models:
 * Mixed precision training with the [huggingface accelerate](https://github.com/huggingface/accelerate) library (🥰automatically turned on)
 * Efficient attention computation with the [facebook xformers](https://github.com/facebookresearch/xformers) library (needs additional installation)
