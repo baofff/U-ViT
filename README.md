@@ -1,9 +1,24 @@
 ## [All are Worth Words: A ViT Backbone for Diffusion Models](https://arxiv.org/abs/2209.12152)<br> <sub>A PyTorch implementation</sub>
 
-
 <img src="uvit.png" alt="drawing" width="400"/>
 
-This codebase implements the transformer-based backbone 💡*U-ViT*💡 for diffusion models, as introduced in the [paper](https://arxiv.org/abs/2209.12152).
+Vision transformers (ViT) have shown promise in various vision tasks while the U-Net based on a convolutional neural network (CNN) remains dominant in diffusion models. 
+We design a simple and general ViT-based architecture (named U-ViT) for image generation with diffusion models. 
+U-ViT is characterized by treating all inputs including the time, condition and noisy image patches as tokens 
+and employing long skip connections between shallow and deep layers. 
+We evaluate U-ViT in unconditional and class-conditional image generation, 
+as well as text-to-image generation tasks, where U-ViT is comparable if not superior to a CNN-based U-Net of a similar size. 
+In particular, latent diffusion models with U-ViT achieve record-breaking FID scores of 2.29 in class-conditional image generation 
+on ImageNet 256x256, and 5.48 in text-to-image generation on MS-COCO, among methods without accessing 
+large external datasets during the training of generative models.
+
+Our results suggest that, for diffusion-based image modeling, the long skip connection is crucial while the down-sampling and up-sampling operators in CNN-based U-Net are not always necessary. We believe that U-ViT can provide insights for future research on backbones in diffusion models and benefit generative modeling on large scale cross-modality datasets.
+
+--------------------
+
+
+
+This codebase implements the transformer-based backbone 📌*U-ViT*📌 for diffusion models, as introduced in the [paper](https://arxiv.org/abs/2209.12152).
 U-ViT treats all inputs as tokens and employs long skip connections. *The long skip connections grealy promote the performance and the convergence speed*.
 
 
@@ -11,19 +26,25 @@ U-ViT treats all inputs as tokens and employs long skip connections. *The long s
 <img src="skip_im.png" alt="drawing" width="400"/>
 
 
-💡 This codebase contains:
+💡This codebase contains:
 * An implementation of [U-ViT](libs/uvit.py) with optimized attention computation
 * Pretrained U-ViT models on common image generation benchmarks (CIFAR10, CelebA 64x64, ImageNet 64x64, ImageNet 256x256, ImageNet 512x512)
 * Efficient training scripts for [pixel-space diffusion models](train.py), [latent space diffusion models](train_ldm_discrete.py) and [text-to-image diffusion models](train_t2i_discrete.py)
 * Efficient evaluation scripts for [pixel-space diffusion models](eval.py) and [latent space diffusion models](eval_ldm_discrete.py) and [text-to-image diffusion models](eval_t2i_discrete.py)
 * TODO: add a Colab notebook for ImageNet demos
 
-💡 This codebase supports useful techniques for efficient training and sampling of diffusion models:
+💡This codebase supports useful techniques for efficient training and sampling of diffusion models:
 * Mixed precision training with the [huggingface accelerate](https://github.com/huggingface/accelerate) library
 * Efficient attention computation with the [facebook xformers](https://github.com/facebookresearch/xformers) library
-* Gradient checkpointing trick, which reduces ~80% memory
+* Gradient checkpointing trick, which reduces ~65% memory
+* With these techniques, we are able to train our largest U-ViT-H on ImageNet at high resolutions such as 256x256 and 512x512 using a large batch size of 1024 with *only 2 A100*❗
 
-
+| mixed precision training | xformers | gradient checkpointing |  training speed   |    memory     |
+|:------------------------:|:--------:|:----------------------:|:-----------------:|:-------------:|
+|            ❌             |    ❌     |           ❌            |         -         | out of memory |
+|            ✔             |    ❌     |           ❌            | 0.97 steps/second |   78852 MB    |
+|            ✔             |    ✔     |           ❌            | 1.14 steps/second |   54324 MB    |
+|            ✔             |    ✔     |           ✔            | 0.87 steps/second |   18858 MB    |
 
 ## Dependency
 
@@ -32,7 +53,6 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.3
 pip install accelerate==0.12.0 timm==0.3.2 absl-py ml_collections einops wandb ftfy==6.1.1 transformers==4.23.1
 
 # xformers is optional, but it would greatly speed up the attention computation.
-# 
 pip install -U xformers
 pip install -U --pre triton
 ```
@@ -63,7 +83,7 @@ pip install -U --pre triton
 ## Preparation Before Training and Evaluation
 
 #### Autoencoder
-Download `stable-diffusion` directory (containing image autoencoders converted from [Stable Diffusion](https://github.com/CompVis/stable-diffusion)) from this [link](https://drive.google.com/drive/folders/1yo-XhqbPue3rp5P57j6QbA5QZx6KybvP?usp=sharing). 
+Download `stable-diffusion` directory from this [link](https://drive.google.com/drive/folders/1yo-XhqbPue3rp5P57j6QbA5QZx6KybvP?usp=sharing) (which contains image autoencoders converted from [Stable Diffusion](https://github.com/CompVis/stable-diffusion)). 
 Put the downloaded directory as `assets/stable-diffusion` in this codebase.
 The autoencoders are used in latent diffusion models.
 
@@ -73,7 +93,7 @@ The autoencoders are used in latent diffusion models.
 * MS-COCO: Download COCO 2014 [training](http://images.cocodataset.org/zips/train2014.zip), [validation](http://images.cocodataset.org/zips/val2014.zip) data and [annotations](http://images.cocodataset.org/annotations/annotations_trainval2014.zip). Then extract their features according to `scripts/extract_mscoco_feature.py` `scripts/extract_test_prompt_feature.py` `scripts/extract_empty_feature.py`.
 
 #### Reference statistics for FID
-Download `fid_stats` directory (containing reference statistics for FID) from this [link](https://drive.google.com/drive/folders/1yo-XhqbPue3rp5P57j6QbA5QZx6KybvP?usp=sharing).
+Download `fid_stats` directory from this [link](https://drive.google.com/drive/folders/1yo-XhqbPue3rp5P57j6QbA5QZx6KybvP?usp=sharing) (which contains reference statistics for FID).
 Put the downloaded directory as `assets/fid_stats` in this codebase.
 In addition to evaluation, these reference statistics are used to monitor FID during the training process.
 
@@ -149,7 +169,7 @@ config=configs/cifar10_uvit_small.py  # the training configuration
 # launch evaluation
 accelerate launch --multi_gpu --num_processes $num_processes --mixed_precision fp16 eval_script --config=$config
 ```
-The generated images are stored in a temperary directory, and will be deleted after evaluation. 💡If you want to keep these images, set `--config.sample.path=/save/dir`.
+The generated images are stored in a temperary directory, and will be deleted after evaluation. If you want to keep these images, set `--config.sample.path=/save/dir`.
 
 
 We provide all commands to reproduce FID results in the paper:
