@@ -31,13 +31,16 @@ U-ViT treats all inputs as tokens and employs long skip connections. *The long s
 * Pretrained U-ViT models on common image generation benchmarks (CIFAR10, CelebA 64x64, ImageNet 64x64, ImageNet 256x256, ImageNet 512x512)
 * Efficient training scripts for [pixel-space diffusion models](train.py), [latent space diffusion models](train_ldm_discrete.py) and [text-to-image diffusion models](train_t2i_discrete.py)
 * Efficient evaluation scripts for [pixel-space diffusion models](eval.py) and [latent space diffusion models](eval_ldm_discrete.py) and [text-to-image diffusion models](eval_t2i_discrete.py)
-* TODO: add a Colab notebook for ImageNet demos
+* A Colab notebook demo for sampling from U-ViT on ImageNet (FID=2.29) [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/baofff/U-ViT/blob/main/UViT_ImageNet_demo.ipynb)
 
 💡This codebase supports useful techniques for efficient training and sampling of diffusion models:
-* Mixed precision training with the [huggingface accelerate](https://github.com/huggingface/accelerate) library
-* Efficient attention computation with the [facebook xformers](https://github.com/facebookresearch/xformers) library
-* Gradient checkpointing trick, which reduces ~65% memory
+* Mixed precision training with the [huggingface accelerate](https://github.com/huggingface/accelerate) library (🥰automatically turned on)
+* Efficient attention computation with the [facebook xformers](https://github.com/facebookresearch/xformers) library (needs additional installation)
+* Gradient checkpointing trick, which reduces ~65% memory (🥰automatically turned on)
 * With these techniques, we are able to train our largest U-ViT-H on ImageNet at high resolutions such as 256x256 and 512x512 using a large batch size of 1024 with *only 2 A100*❗
+
+
+Training speed and memory of U-ViT-H/2 on ImageNet 256x256 using a batch size of 128 with a A100:
 
 | mixed precision training | xformers | gradient checkpointing |  training speed   |    memory     |
 |:------------------------:|:--------:|:----------------------:|:-----------------:|:-------------:|
@@ -45,6 +48,8 @@ U-ViT treats all inputs as tokens and employs long skip connections. *The long s
 |            ✔             |    ❌     |           ❌            | 0.97 steps/second |   78852 MB    |
 |            ✔             |    ✔     |           ❌            | 1.14 steps/second |   54324 MB    |
 |            ✔             |    ✔     |           ✔            | 0.87 steps/second |   18858 MB    |
+
+
 
 ## Dependency
 
@@ -57,7 +62,7 @@ pip install -U xformers
 pip install -U --pre triton
 ```
 
-* This repo is based on [`timm==0.3.2`](https://github.com/rwightman/pytorch-image-models), for which a [fix](https://github.com/rwightman/pytorch-image-models/issues/420#issuecomment-776459842) is needed to work with PyTorch 1.8.1+.
+* This repo is based on [`timm==0.3.2`](https://github.com/rwightman/pytorch-image-models), for which a [fix](https://github.com/rwightman/pytorch-image-models/issues/420#issuecomment-776459842) is needed to work with PyTorch 1.8.1+. (Perhaps other versions also work, but I haven't tested it.)
 * We highly suggest install [xformers](https://github.com/facebookresearch/xformers), which would greatly speed up the attention computation for *both training and inference*.
 
 
