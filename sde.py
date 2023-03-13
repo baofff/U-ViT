@@ -178,7 +178,7 @@ class ScoreModel(object):
         if self.pred == 'noise_pred':
             noise_pred = pred
         elif self.pred == 'x0_pred':
-            noise_pred = - self.sde.snr(t).sqrt() * pred + self.sde.cum_beta(t).rsqrt() * xt
+            noise_pred = - stp(self.sde.snr(t).sqrt(), pred) + stp(self.sde.cum_beta(t).rsqrt(), xt)
         else:
             raise NotImplementedError
         return noise_pred
@@ -186,7 +186,7 @@ class ScoreModel(object):
     def x0_pred(self, xt, t, **kwargs):
         pred = self.predict(xt, t, **kwargs)
         if self.pred == 'noise_pred':
-            x0_pred = self.sde.cum_alpha(t).rsqrt() * xt - self.sde.nsr(t).sqrt() * pred
+            x0_pred = stp(self.sde.cum_alpha(t).rsqrt(), xt) - stp(self.sde.nsr(t).sqrt(), pred)
         elif self.pred == 'x0_pred':
             x0_pred = pred
         else:
