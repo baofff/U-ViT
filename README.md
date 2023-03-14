@@ -1,4 +1,4 @@
-## [All are Worth Words: A ViT Backbone for Diffusion Models](https://arxiv.org/abs/2209.12152)<br> <sub>A PyTorch implementation</sub>
+## U-ViT<br> <sub>Official PyTorch implementation of [All are Worth Words: A ViT Backbone for Diffusion Models](https://arxiv.org/abs/2209.12152) (CVPR 2023)</sub>
 
 <img src="uvit.png" alt="drawing" width="400"/>
 
@@ -220,10 +220,10 @@ accelerate launch --multi_gpu --num_processes 4 --mixed_precision fp16 eval_t2i_
 ## References
 If you find the code useful for your research, please consider citing
 ```bib
-@article{bao2022all,
-  title={All are Worth Words: a ViT Backbone for Score-based Diffusion Models},
-  author={Bao, Fan and Li, Chongxuan and Cao, Yue and Zhu, Jun},
-  journal={arXiv preprint arXiv:2209.12152},
+@inproceedings{bao2022all,
+  title={All are Worth Words: A ViT Backbone for Diffusion Models},
+  author={Bao, Fan and Nie, Shen and Xue, Kaiwen and Cao, Yue and Li, Chongxuan and Su, Hang and Zhu, Jun},
+  booktitle = {CVPR},
   year={2022}
 }
 ```
