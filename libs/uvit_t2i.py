@@ -144,7 +144,7 @@ class UViT(nn.Module):
         self.in_chans = in_chans
 
         self.patch_embed = PatchEmbed(patch_size=patch_size, in_chans=in_chans, embed_dim=embed_dim)
-        num_patches = self.patch_embed.num_patches
+        num_patches = (img_size // patch_size) ** 2
 
         self.time_embed = nn.Sequential(
             nn.Linear(embed_dim, 4 * embed_dim),
