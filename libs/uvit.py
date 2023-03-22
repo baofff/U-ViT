@@ -8,15 +8,16 @@ assert timm.__version__ == "0.3.2"  # version check
 import einops
 import torch.utils.checkpoint
 
-# the xformers lib allows less memory, faster training and inference
-try:
-    import xformers
-    import xformers.ops
-    XFORMERS_IS_AVAILBLE = True
-    print('xformers enabled')
-except:
-    XFORMERS_IS_AVAILBLE = False
-    print('xformers disabled')
+if hasattr(torch.nn.functional, 'scaled_dot_product_attention'):
+    ATTENTION_MODE = 'flash'
+else:
+    try:
+        import xformers
+        import xformers.ops
+        ATTENTION_MODE = 'xformers'
+    except:
+        ATTENTION_MODE = 'math'
+print(f'attention mode is {ATTENTION_MODE}')
 
 
 def timestep_embedding(timesteps, dim, max_period=10000):
@@ -69,18 +70,25 @@ class Attention(nn.Module):
         B, L, C = x.shape
 
         qkv = self.qkv(x)
-        if XFORMERS_IS_AVAILBLE:  # the xformers lib allows less memory, faster training and inference
+        if ATTENTION_MODE == 'flash':
+            qkv = einops.rearrange(qkv, 'B L (K H D) -> K B H L D', K=3, H=self.num_heads).float()
+            q, k, v = qkv[0], qkv[1], qkv[2]  # B H L D
+            x = torch.nn.functional.scaled_dot_product_attention(q, k, v)
+            x = einops.rearrange(x, 'B H L D -> B L (H D)')
+        elif ATTENTION_MODE == 'xformers':
             qkv = einops.rearrange(qkv, 'B L (K H D) -> K B L H D', K=3, H=self.num_heads)
             q, k, v = qkv[0], qkv[1], qkv[2]  # B L H D
             x = xformers.ops.memory_efficient_attention(q, k, v)
             x = einops.rearrange(x, 'B L H D -> B L (H D)', H=self.num_heads)
-        else:
+        elif ATTENTION_MODE == 'math':
             qkv = einops.rearrange(qkv, 'B L (K H D) -> K B H L D', K=3, H=self.num_heads)
             q, k, v = qkv[0], qkv[1], qkv[2]  # B H L D
             attn = (q @ k.transpose(-2, -1)) * self.scale
             attn = attn.softmax(dim=-1)
             attn = self.attn_drop(attn)
             x = (attn @ v).transpose(1, 2).reshape(B, L, C)
+        else:
+            raise NotImplemented
 
         x = self.proj(x)
         x = self.proj_drop(x)
