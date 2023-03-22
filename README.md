@@ -1,9 +1,9 @@
 ## U-ViT<br> <sub><small>Official PyTorch implementation of [All are Worth Words: A ViT Backbone for Diffusion Models](https://arxiv.org/abs/2209.12152) (CVPR 2023)</small></sub>
 
 
-💡NEWs: 
-* [2023/03/13] [UniDiffuser](https://github.com/thu-ml/unidiffuser), a multi-modal large-scale diffusion model based on a 1B U-ViT, is open-sourced
-
+💡Projects with U-ViT: 
+* [UniDiffuser](https://github.com/thu-ml/unidiffuser), a multi-modal large-scale diffusion model based on a 1B U-ViT, is open-sourced
+* [Diffusion Models and Semi-Supervised Learners Benefit Mutually with Few Labels](https://arxiv.org/abs/2302.10586)
 
 <img src="uvit.png" alt="drawing" width="400"/>
 
