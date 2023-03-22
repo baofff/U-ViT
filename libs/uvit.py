@@ -1,10 +1,7 @@
 import torch
 import torch.nn as nn
 import math
-import timm
-from timm.models.layers import trunc_normal_
-from timm.models.vision_transformer import PatchEmbed, Mlp
-assert timm.__version__ == "0.3.2"  # version check
+from .timm import trunc_normal_, Mlp
 import einops
 import torch.utils.checkpoint
 

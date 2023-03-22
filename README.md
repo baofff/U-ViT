@@ -63,8 +63,8 @@ Training speed and memory of U-ViT-H/2 on ImageNet 256x256 using a batch size of
 ## Dependency
 
 ```sh
-conda install pytorch torchvision torchaudio cudatoolkit=11.3
-pip install accelerate==0.12.0 timm==0.3.2 absl-py ml_collections einops wandb ftfy==6.1.1 transformers==4.23.1
+pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu116  # install torch-1.13.1
+pip install accelerate==0.12.0 absl-py ml_collections einops wandb ftfy==6.1.1 transformers==4.23.1
 
 # xformers is optional, but it would greatly speed up the attention computation.
 pip install -U xformers
