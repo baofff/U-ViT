@@ -3,7 +3,7 @@
 
 💡Projects with U-ViT: 
 * [UniDiffuser](https://github.com/thu-ml/unidiffuser), a multi-modal large-scale diffusion model based on a 1B U-ViT, is open-sourced
-* [Diffusion Models and Semi-Supervised Learners Benefit Mutually with Few Labels](https://arxiv.org/abs/2302.10586)
+* [DPT](https://arxiv.org/abs/2302.10586), [code](https://github.com/ML-GSAI/DPT), a conditional diffusion model trained with 1 label/class with SOTA SSL generation and classification results on ImageNet
 
 <img src="uvit.png" alt="drawing" width="400"/>
 
